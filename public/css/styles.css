@@ -471,7 +471,47 @@ input[type="date"] { color-scheme: dark; }
 .pin-box input { letter-spacing: .3em; text-align: center; font-size: 1.1rem; }
 .pin-box input::placeholder { letter-spacing: .3em; }
 
-/* Dropzone de imagen */
+/* Selector de imagen: cámara / galería */
+.upload-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color .2s;
+}
+.upload-box.invalid { border-color: var(--danger); background: var(--danger-soft); }
+.upload-box.has-image { display: none; }
+
+.upload-title { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; }
+.upload-title i { color: var(--primary-2); }
+
+.upload-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.upload-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.upload-btn i { color: var(--primary-2); }
+.upload-btn:hover { background: var(--primary-soft); border-color: var(--primary-2); }
+.upload-btn:focus-within { outline: 2px solid var(--primary-2); outline-offset: 2px; }
+.upload-btn input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* Dropzone de imagen (legacy) */
 .file-input-label {
   display: flex;
   flex-direction: column;

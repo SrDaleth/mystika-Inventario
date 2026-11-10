@@ -165,11 +165,19 @@
           </div>
         </div>
 
-        <label class="file-input-label">
-          <i class="fa-solid fa-camera"></i>
-          <span><strong>Subir foto</strong> desde el móvil o PC</span>
-          <input type="file" id="input-imagen-disfraz" name="imagen" accept="image/*" capture="environment" required>
-        </label>
+        <div id="upload-box" class="upload-box">
+          <span class="upload-title"><i class="fa-solid fa-image"></i> Foto del disfraz</span>
+          <div class="upload-options">
+            <label class="upload-btn">
+              <i class="fa-solid fa-camera"></i> Tomar foto
+              <input type="file" id="input-imagen-camara" class="input-imagen" accept="image/*" capture="environment">
+            </label>
+            <label class="upload-btn">
+              <i class="fa-solid fa-images"></i> Galería
+              <input type="file" id="input-imagen-galeria" class="input-imagen" accept="image/*">
+            </label>
+          </div>
+        </div>
 
         <div id="container-preview-imagen" class="image-preview">
           <img id="preview-imagen" src="" alt="Vista previa">

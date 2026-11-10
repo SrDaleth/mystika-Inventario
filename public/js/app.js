@@ -29,7 +29,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (formNuevo) {
     formNuevo.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const imagen = obtenerImagenSeleccionada();
+      if (!imagen) {
+        document.getElementById('upload-box').classList.add('invalid');
+        showToast('Selecciona una foto desde la cámara o la galería', 'error');
+        return;
+      }
+
       const formData = new FormData(e.target);
+      formData.set('imagen', imagen);
 
       // Limpiar puntos del campo precio por si ingresaron 75.000
     let precio = formData.get('precioAlquiler');
@@ -89,25 +97,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Previsualización de la imagen seleccionada
-  const inputImagen = document.getElementById('input-imagen-disfraz');
-  if (inputImagen) {
-    inputImagen.addEventListener('change', (e) => {
+  // Previsualización de la imagen (cámara o galería)
+  document.querySelectorAll('.input-imagen').forEach(input => {
+    input.addEventListener('change', (e) => {
       const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const previewImg = document.getElementById('preview-imagen');
-          const previewContainer = document.getElementById('container-preview-imagen');
-          if (previewImg && previewContainer) {
-            previewImg.src = event.target.result;
-            previewContainer.classList.add('show');
-          }
-        };
-        reader.readAsDataURL(file);
-      }
+      if (!file) return;
+
+      // Solo una fuente activa: limpiar el otro input
+      document.querySelectorAll('.input-imagen').forEach(i => { if (i !== e.target) i.value = ''; });
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        document.getElementById('preview-imagen').src = event.target.result;
+        document.getElementById('container-preview-imagen').classList.add('show');
+        document.getElementById('upload-box').classList.remove('invalid');
+        document.getElementById('upload-box').classList.add('has-image');
+      };
+      reader.readAsDataURL(file);
     });
-  }
+  });
 });
 
 
@@ -276,13 +284,16 @@ function showToast(mensaje, tipo = 'info', duracion = 3500) {
 
 // Función para eliminar solo la imagen seleccionada
 function quitarImagenCargada() {
-  const inputImagen = document.getElementById('input-imagen-disfraz');
-  const previewImg = document.getElementById('preview-imagen');
-  const previewContainer = document.getElementById('container-preview-imagen');
+  document.querySelectorAll('.input-imagen').forEach(i => { i.value = ''; });
+  document.getElementById('preview-imagen').src = '';
+  document.getElementById('container-preview-imagen').classList.remove('show');
+  document.getElementById('upload-box').classList.remove('has-image', 'invalid');
+}
 
-  if (inputImagen) inputImagen.value = '';
-  if (previewImg) previewImg.src = '';
-  if (previewContainer) previewContainer.classList.remove('show');
+// Devuelve el archivo elegido desde la cámara o la galería (o null)
+function obtenerImagenSeleccionada() {
+  const input = [...document.querySelectorAll('.input-imagen')].find(i => i.files.length);
+  return input ? input.files[0] : null;
 }
 
 // Función para resetear todo el formulario y cerrar el modal al cancelar
