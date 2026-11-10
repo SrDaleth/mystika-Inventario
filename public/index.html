@@ -3,33 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f0c1d">
   <title>Mystika - Control de Alquiler de Disfraces</title>
-  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="./css/styles.css">
 </head>
 <body>
 
   <!-- Botón Móvil -->
-  <button id="toggle-sidebar" class="mobile-toggle"><i class="fa-solid fa-bars"></i></button>
+  <button id="toggle-sidebar" class="mobile-toggle" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
+  <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
 
   <div class="app-container">
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar">
       <div class="brand">
-        <h2>✨ Mystika</h2>
+        <div class="brand-logo"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <div>
+          <h2>Mystika</h2>
+          <small>Alquiler de disfraces</small>
+        </div>
       </div>
-      
-      <!-- NAVEGACIÓN EN SIDEBAR -->
+
+      <p class="nav-label">Menú</p>
       <nav class="nav-menu">
-        <a href="#" class="active" onclick="switchSection('catalogo')"><i class="fa-solid fa-mask"></i> Catálogo</a>
-        <a href="#" onclick="switchSection('alquileres')"><i class="fa-solid fa-receipt"></i> Historial Alquileres</a>
-        <a href="#" onclick="switchSection('metricas')"><i class="fa-solid fa-chart-line"></i> Métricas por Días</a>
+        <a href="#" class="active" data-section="catalogo" onclick="switchSection('catalogo'); return false;"><i class="fa-solid fa-mask"></i> Catálogo</a>
+        <a href="#" data-section="alquileres" onclick="switchSection('alquileres'); return false;"><i class="fa-solid fa-receipt"></i> Historial Alquileres</a>
+        <a href="#" data-section="metricas" onclick="switchSection('metricas'); return false;"><i class="fa-solid fa-chart-line"></i> Métricas por Días</a>
       </nav>
 
-      <!-- BOTÓN VACIAR INVENTARIO EN SIDEBAR -->
-      <div style="padding: 15px; margin-top: auto;">
-        <button class="btn" style="background: var(--danger); color: white; width: 100%; font-size: 0.85rem;" onclick="openModal('modal-vaciar-todo')">
-          🗑️ Vaciar Inventario Completo
+      <div class="sidebar-footer">
+        <button class="btn btn-ghost-danger" onclick="openModal('modal-vaciar-todo')">
+          <i class="fa-solid fa-trash-can"></i> Vaciar inventario
         </button>
       </div>
     </aside>
@@ -37,94 +45,147 @@
     <!-- Main Content -->
     <main class="main-content">
       <header class="top-header">
-        <h1 id="section-title">Catálogo de Disfraces</h1>
-        <button class="btn btn-primary" onclick="openModal('modal-nuevo-disfraz')">+ Agregar Disfraz</button>
+        <div>
+          <h1 id="section-title">Catálogo de Disfraces</h1>
+          <p id="section-subtitle" class="page-subtitle">Gestiona tu inventario y registra alquileres</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-nuevo-disfraz')">
+          <i class="fa-solid fa-plus"></i> Agregar Disfraz
+        </button>
       </header>
 
-      <!-- VISTA PRINCIPAL: CATÁLOGO -->
+      <!-- VISTA 1: CATÁLOGO -->
       <section id="sec-catalogo" class="content-section active">
-        <div id="costumes-grid" class="cards-grid">
-          <!-- Dinámico desde JS -->
-        </div>
+        <div id="costumes-grid" class="cards-grid"></div>
       </section>
 
       <!-- VISTA 2: HISTORIAL DE ALQUILERES -->
-      <!-- Pestaña Historial de Alquileres -->
-<section id="sec-alquileres" class="content-section">
-  <!-- Contenedor del buscador responsive -->
-  <div class="filter-container">
-    <input type="text" id="search-cedula" placeholder="Filtrar por Cédula de cliente...">
-    <button class="btn btn-primary" onclick="cargarAlquileres()">
-      <i class="fa-solid fa-search"></i> Buscar
-    </button>
-  </div>
-
-  <!-- Contenedor con scroll para evitar desbordamientos en móvil -->
-  <div class="table-responsive">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Cédula</th>
-          <th>Cliente</th>
-          <th>Disfraz</th>
-          <th>Fecha Alquiler</th>
-          <th>Fecha Devolución</th>
-          <th>Estado</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody id="alquileres-table-body"></tbody>
-    </table>
-  </div>
-</section>
-
-      <!-- VISTA 3: MÉTRICAS POR DÍAS -->
-      <section id="sec-metricas" class="content-section">
-        <h2>📊 Métricas y Conteo Diario de Ingresos</h2>
-        <div id="metricas-cards" style="display: flex; gap: 20px; margin: 20px 0;">
-          <div class="card" style="padding: 20px; flex: 1;">
-            <h3>Ingresos del Día de Hoy</h3>
-            <h1 id="ingresos-hoy" style="color: var(--success); margin-top: 10px;">$0</h1>
+      <section id="sec-alquileres" class="content-section">
+        <div class="filter-container">
+          <div class="input-icon">
+            <i class="fa-solid fa-id-card"></i>
+            <input type="text" id="search-cedula" placeholder="Filtrar por cédula del cliente..." onkeydown="if(event.key==='Enter') cargarAlquileres()">
           </div>
-          <div class="card" style="padding: 20px; flex: 1;">
-            <h3>Ingresos Acumulados Totales</h3>
-            <h1 id="ingresos-totales" style="color: var(--secondary); margin-top: 10px;">$0</h1>
+          <button class="btn btn-primary" onclick="cargarAlquileres()">
+            <i class="fa-solid fa-magnifying-glass"></i> Buscar
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Cédula</th>
+                <th>Cliente</th>
+                <th>Disfraz</th>
+                <th>Fecha Alquiler</th>
+                <th>Fecha Devolución</th>
+                <th>Estado</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="alquileres-table-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VISTA 3: MÉTRICAS -->
+      <section id="sec-metricas" class="content-section">
+        <div class="kpi-grid">
+          <div class="kpi-card green">
+            <div class="kpi-head">
+              <span class="kpi-label">Ingresos de hoy</span>
+              <span class="kpi-icon"><i class="fa-solid fa-sack-dollar"></i></span>
+            </div>
+            <div id="ingresos-hoy" class="kpi-value">$0</div>
+            <p class="kpi-hint">Alquileres registrados hoy</p>
+          </div>
+
+          <div class="kpi-card gold">
+            <div class="kpi-head">
+              <span class="kpi-label">Ingresos acumulados</span>
+              <span class="kpi-icon"><i class="fa-solid fa-coins"></i></span>
+            </div>
+            <div id="ingresos-totales" class="kpi-value">$0</div>
+            <p class="kpi-hint">Histórico total</p>
+          </div>
+
+          <div class="kpi-card violet">
+            <div class="kpi-head">
+              <span class="kpi-label">Alquileres activos</span>
+              <span class="kpi-icon"><i class="fa-solid fa-hourglass-half"></i></span>
+            </div>
+            <div id="alquileres-activos" class="kpi-value">0</div>
+            <p class="kpi-hint">Pendientes de devolución</p>
+          </div>
+
+          <div class="kpi-card red">
+            <div class="kpi-head">
+              <span class="kpi-label">Disfraces agotados</span>
+              <span class="kpi-icon"><i class="fa-solid fa-box-open"></i></span>
+            </div>
+            <div id="disfraces-agotados" class="kpi-value">0</div>
+            <p class="kpi-hint">Sin stock disponible</p>
           </div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- MODALES DE LA APLICACIÓN -->
+  <!-- ===================== MODALES ===================== -->
 
   <!-- MODAL: NUEVO DISFRAZ -->
   <div id="modal-nuevo-disfraz" class="modal">
     <div class="modal-content">
-      <h3>Agregar Nuevo Disfraz</h3>
+      <div class="modal-header">
+        <span class="modal-icon"><i class="fa-solid fa-shirt"></i></span>
+        <h3>Agregar nuevo disfraz</h3>
+      </div>
       <form id="form-nuevo-disfraz" enctype="multipart/form-data">
-        <input type="text" name="nombre" placeholder="Nombre del Disfraz" required>
-        <input type="text" name="categoria" placeholder="Categoría (Ej: Terror, Época)" required>
-        <input type="text" name="talla" placeholder="Talla (S, M, L, XL)" required>
-        <input type="number" name="precioAlquiler" placeholder="Precio Alquiler ($)" required>
-        <input type="number" name="stockTotal" placeholder="Stock / Cantidad Inicial" required>
-        <input type="password" name="pin" maxlength="8" placeholder="PIN de Seguridad" required style="border: 1px solid var(--primary);">
-        
+        <div class="form-grid">
+          <div class="field full">
+            <label>Nombre</label>
+            <input type="text" name="nombre" placeholder="Ej: Vampiro clásico" required>
+          </div>
+          <div class="field">
+            <label>Categoría</label>
+            <input type="text" name="categoria" placeholder="Terror, Época..." required>
+          </div>
+          <div class="field">
+            <label>Talla</label>
+            <input type="text" name="talla" placeholder="S, M, L, XL" required>
+          </div>
+          <div class="field">
+            <label>Precio alquiler ($)</label>
+            <input type="number" name="precioAlquiler" placeholder="75000" required>
+          </div>
+          <div class="field">
+            <label>Stock inicial</label>
+            <input type="number" name="stockTotal" placeholder="1" required>
+          </div>
+        </div>
+
         <label class="file-input-label">
-          📷 Subir Foto (Móvil / PC)
+          <i class="fa-solid fa-camera"></i>
+          <span><strong>Subir foto</strong> desde el móvil o PC</span>
           <input type="file" id="input-imagen-disfraz" name="imagen" accept="image/*" capture="environment" required>
         </label>
 
-        <div id="container-preview-imagen" style="display: none; margin: 10px 0; text-align: center;">
-          <img id="preview-imagen" src="" alt="Vista previa" style="max-width: 100%; max-height: 150px; border-radius: 8px; object-fit: cover;">
-          <br>
-          <button type="button" class="btn btn-cancel" style="margin-top: 8px; font-size: 0.85rem; padding: 5px 10px;" onclick="quitarImagenCargada()">
-            🗑️ Quitar imagen
+        <div id="container-preview-imagen" class="image-preview">
+          <img id="preview-imagen" src="" alt="Vista previa">
+          <button type="button" class="icon-btn delete" title="Quitar imagen" onclick="quitarImagenCargada()">
+            <i class="fa-solid fa-xmark"></i>
           </button>
+        </div>
+
+        <div class="pin-box">
+          <label><i class="fa-solid fa-lock"></i> PIN de seguridad</label>
+          <input type="password" name="pin" maxlength="8" placeholder="••••" required>
         </div>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-cancel" onclick="cancelarAgregarDisfraz()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Guardar</button>
         </div>
       </form>
     </div>
@@ -133,23 +194,39 @@
   <!-- MODAL: REGISTRAR ALQUILER -->
   <div id="modal-alquilar" class="modal">
     <div class="modal-content">
-      <h3>Registrar Alquiler de Disfraz</h3>
+      <div class="modal-header">
+        <span class="modal-icon success"><i class="fa-solid fa-receipt"></i></span>
+        <h3>Registrar alquiler</h3>
+      </div>
       <form id="form-alquilar">
         <input type="hidden" id="alquiler-disfraz-id">
-        <input type="text" id="alq-cedula" placeholder="Cédula del Cliente" required>
-        <input type="text" id="alq-nombre" placeholder="Nombre Completo del Cliente" required>
-        <input type="text" id="alq-telefono" placeholder="Teléfono de Contacto" required>
-        <label>Fecha Límite de Devolución:</label>
-        <input type="date" id="alq-fecha-dev" required>
-        
+        <div class="form-grid">
+          <div class="field">
+            <label>Cédula</label>
+            <input type="text" id="alq-cedula" placeholder="Cédula del cliente" required>
+          </div>
+          <div class="field">
+            <label>Teléfono</label>
+            <input type="text" id="alq-telefono" placeholder="Teléfono de contacto" required>
+          </div>
+          <div class="field full">
+            <label>Nombre completo</label>
+            <input type="text" id="alq-nombre" placeholder="Nombre del cliente" required>
+          </div>
+          <div class="field full">
+            <label>Fecha límite de devolución</label>
+            <input type="date" id="alq-fecha-dev" required>
+          </div>
+        </div>
+
         <div class="pin-box">
-          <label><i class="fa-solid fa-lock"></i> PIN de Seguridad para Confirmar:</label>
+          <label><i class="fa-solid fa-lock"></i> PIN de seguridad para confirmar</label>
           <input type="password" id="alq-pin" maxlength="8" placeholder="••••" required>
         </div>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-cancel" onclick="closeModal('modal-alquilar')">Cancelar</button>
-          <button type="submit" class="btn btn-success">Confirmar y Descontar Stock</button>
+          <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Confirmar alquiler</button>
         </div>
       </form>
     </div>
@@ -158,49 +235,95 @@
   <!-- MODAL: CAMBIAR PRECIO / DESCUENTO -->
   <div id="modal-cambiar-precio" class="modal">
     <div class="modal-content">
-      <h3>🏷️ Aplicar Descuento / Cambiar Precio</h3>
+      <div class="modal-header">
+        <span class="modal-icon gold"><i class="fa-solid fa-tag"></i></span>
+        <h3>Aplicar descuento / cambiar precio</h3>
+      </div>
       <form id="form-cambiar-precio">
         <input type="hidden" id="precio-disfraz-id">
-        <input type="number" id="nuevo-precio-val" placeholder="Nuevo Precio ($)" required>
-        <input type="password" id="precio-pin" maxlength="8" placeholder="PIN de Seguridad" required>
+        <div class="field">
+          <label>Nuevo precio ($)</label>
+          <input type="number" id="nuevo-precio-val" placeholder="Nuevo precio" required>
+        </div>
+        <div class="pin-box">
+          <label><i class="fa-solid fa-lock"></i> PIN de seguridad</label>
+          <input type="password" id="precio-pin" maxlength="8" placeholder="••••" required>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-cancel" onclick="closeModal('modal-cambiar-precio')">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Actualizar Precio</button>
+          <button type="submit" class="btn btn-primary">Actualizar precio</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: ELIMINAR DISFRAZ INDIVIDUAL -->
-<div id="modal-eliminar-disfraz" class="modal">
-  <div class="modal-content">
-    <h3 style="color: var(--danger);">🗑️ Eliminar Disfraz</h3>
-    <p style="margin: 10px 0; font-size: 0.9rem;">Esta acción eliminará este disfraz del inventario. Ingrese el PIN de seguridad.</p>
-    <form id="form-eliminar-disfraz">
-      <input type="hidden" id="eliminar-disfraz-id">
-      <input type="password" id="eliminar-pin" maxlength="8" placeholder="PIN de Seguridad" required>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-cancel" onclick="closeModal('modal-eliminar-disfraz')">Cancelar</button>
-        <button type="submit" class="btn" style="background: var(--danger); color: white;">Eliminar</button>
+  <!-- MODAL: ELIMINAR DISFRAZ -->
+  <div id="modal-eliminar-disfraz" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-icon danger"><i class="fa-solid fa-trash"></i></span>
+        <h3>Eliminar disfraz</h3>
       </div>
-    </form>
+      <p class="modal-text">Esta acción eliminará el disfraz del inventario. Ingresa el PIN de seguridad.</p>
+      <form id="form-eliminar-disfraz">
+        <input type="hidden" id="eliminar-disfraz-id">
+        <div class="pin-box">
+          <label><i class="fa-solid fa-lock"></i> PIN de seguridad</label>
+          <input type="password" id="eliminar-pin" maxlength="8" placeholder="••••" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-cancel" onclick="closeModal('modal-eliminar-disfraz')">Cancelar</button>
+          <button type="submit" class="btn btn-danger">Eliminar</button>
+        </div>
+      </form>
+    </div>
   </div>
-</div>
 
-  <!-- MODAL: VACIAR INVENTARIO COMPLETO -->
+  <!-- MODAL: DEVOLVER DISFRAZ -->
+  <div id="modal-devolver" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="modal-icon success"><i class="fa-solid fa-rotate-left"></i></span>
+        <h3>Confirmar devolución</h3>
+      </div>
+      <p class="modal-text">El disfraz volverá a estar disponible en el inventario.</p>
+      <form id="form-devolver">
+        <input type="hidden" id="devolver-alquiler-id">
+        <div class="pin-box">
+          <label><i class="fa-solid fa-lock"></i> PIN de seguridad</label>
+          <input type="password" id="devolver-pin" maxlength="8" placeholder="••••" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-cancel" onclick="closeModal('modal-devolver')">Cancelar</button>
+          <button type="submit" class="btn btn-success"><i class="fa-solid fa-check"></i> Confirmar devolución</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: VACIAR INVENTARIO -->
   <div id="modal-vaciar-todo" class="modal">
     <div class="modal-content">
-      <h3 style="color: var(--danger);">⚠️ Vaciar Inventario Completo</h3>
-      <p style="margin: 10px 0; font-size: 0.9rem;">Esta acción eliminará TODOS los disfraces y sus alquileres registrados. Se requiere PIN.</p>
+      <div class="modal-header">
+        <span class="modal-icon danger"><i class="fa-solid fa-triangle-exclamation"></i></span>
+        <h3>Vaciar inventario completo</h3>
+      </div>
+      <p class="modal-text">Se eliminarán <strong>TODOS</strong> los disfraces y sus alquileres registrados. Esta acción no se puede deshacer.</p>
       <form id="form-vaciar-todo">
-        <input type="password" id="vaciar-pin" maxlength="8" placeholder="PIN de Seguridad" required>
+        <div class="pin-box">
+          <label><i class="fa-solid fa-lock"></i> PIN de seguridad</label>
+          <input type="password" id="vaciar-pin" maxlength="8" placeholder="••••" required>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-cancel" onclick="closeModal('modal-vaciar-todo')">Cancelar</button>
-          <button type="submit" class="btn" style="background: var(--danger); color: white;">Borrar Todo</button>
+          <button type="submit" class="btn btn-danger">Borrar todo</button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- Toasts -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
 
   <script src="./js/app.js"></script>
 </body>

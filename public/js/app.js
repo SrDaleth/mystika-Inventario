@@ -5,11 +5,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Sidebar Móvil Toggle
   const toggleBtn = document.getElementById('toggle-sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
-      document.getElementById('sidebar').classList.toggle('active');
+      const open = document.getElementById('sidebar').classList.toggle('active');
+      if (backdrop) backdrop.classList.toggle('show', open);
     });
   }
+  if (backdrop) backdrop.addEventListener('click', cerrarSidebarMovil);
+
+  // Cerrar modales con Escape o clic en el fondo
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal').forEach(m => { if (m.style.display === 'flex') closeModal(m.id); });
+    }
+  });
+  document.querySelectorAll('.modal').forEach(m => {
+    m.addEventListener('click', (e) => { if (e.target === m) closeModal(m.id); });
+  });
 
   // Guardar Nuevo Disfraz
   const formNuevo = document.getElementById('form-nuevo-disfraz');
@@ -31,13 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (res.ok) {
         cancelarAgregarDisfraz(); // Limpia formulario, imagen y cierra modal
+        showToast('Disfraz agregado al catálogo', 'success');
         cargarDisfraces();
       } else {
         const errData = await res.json();
-        alert(`Error al guardar: ${errData.error || 'Verifica la consola'}`);
+        showToast(`Error al guardar: ${errData.error || 'Verifica la consola'}`, 'error');
       }
     } catch (err) {
-      alert('No se pudo conectar con el servidor backend en http://localhost:3000');
+      showToast('No se pudo conectar con el servidor', 'error');
     }
     });
   }
@@ -65,12 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       if (res.ok) {
-        alert('¡Alquiler completado exitosamente!');
+        showToast('¡Alquiler registrado exitosamente!', 'success');
         closeModal('modal-alquilar');
         e.target.reset();
         cargarDisfraces();
       } else {
-        alert(`Error: ${data.error}`);
+        showToast(`Error: ${data.error}`, 'error');
       }
     });
   }
@@ -87,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const previewContainer = document.getElementById('container-preview-imagen');
           if (previewImg && previewContainer) {
             previewImg.src = event.target.result;
-            previewContainer.style.display = 'block';
+            previewContainer.classList.add('show');
           }
         };
         reader.readAsDataURL(file);
@@ -117,10 +131,12 @@ document.getElementById('form-eliminar-disfraz').addEventListener('submit', asyn
 
   if (res.ok) {
     closeModal('modal-eliminar-disfraz');
+    e.target.reset();
+    showToast('Disfraz eliminado', 'success');
     cargarDisfraces();
   } else {
     const data = await res.json();
-    alert(`Error: ${data.error}`);
+    showToast(`Error: ${data.error}`, 'error');
   }
 });
 
@@ -130,45 +146,55 @@ async function cargarDisfraces() {
   const disfraces = await res.json();
   const grid = document.getElementById('costumes-grid');
   if (!grid) return;
-  grid.innerHTML = '';
+  if (!disfraces.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <i class="fa-solid fa-mask"></i>
+        <h3>No hay disfraces aún</h3>
+        <p>Usa “Agregar Disfraz” para crear el primero.</p>
+      </div>`;
+    return;
+  }
 
-  disfraces.forEach(item => {
+  grid.innerHTML = disfraces.map(item => {
     const isAvailable = item.stockDisponible > 0;
-    grid.innerHTML += `
-      <div class="card" style="position: relative;">
-        <!-- Botón de Descuento (Esquina superior izquierda) -->
-        <button class="btn" onclick="abrirModalPrecio('${item._id}', ${item.precioAlquiler})" 
-          style="position: absolute; top: 10px; left: 10px; background: rgba(108,92,231,0.8); color: white; padding: 5px 10px; border-radius: 6px; font-size: 0.8rem; z-index: 10;">
-          🏷️ Descuento
-        </button>
+    const isLow = isAvailable && item.stockDisponible <= Math.max(1, Math.floor(item.stockTotal * 0.25));
+    const stockClass = !isAvailable ? 'empty' : (isLow ? 'warning' : 'available');
 
-        <!-- Botón de Eliminar (Esquina superior derecha) -->
-        <button class="btn" onclick="abrirModalEliminar('${item._id}')" 
-          style="position: absolute; top: 10px; right: 10px; background: rgba(255,118,117,0.8); color: white; padding: 5px 10px; border-radius: 50%; z-index: 10;">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-
-        <img src="${item.imagenUrl}" class="card-img" alt="${item.nombre}">
-        <div class="card-body">
-          <div>
-            <div class="card-title">${item.nombre}</div>
-            <div class="card-info">Categoría: ${item.categoria} | Talla: ${item.talla}</div>
-            <div class="card-info"><strong>Precio:</strong> $${item.precioAlquiler.toLocaleString('es-CO')}</div>
-            <span class="stock-badge ${isAvailable ? 'available' : 'empty'}">
-              Stock: ${item.stockDisponible} / ${item.stockTotal}
-            </span>
+    return `
+      <article class="card costume-card">
+        <div class="card-media">
+          <span class="category-badge">${item.categoria}</span>
+          <div class="card-actions">
+            <button class="icon-btn discount" title="Aplicar descuento"
+              onclick="abrirModalPrecio('${item._id}', ${item.precioAlquiler})">
+              <i class="fa-solid fa-tag"></i>
+            </button>
+            <button class="icon-btn delete" title="Eliminar disfraz"
+              onclick="abrirModalEliminar('${item._id}')">
+              <i class="fa-solid fa-trash"></i>
+            </button>
           </div>
-          <div style="margin-top: 15px;">
-            <button class="btn btn-success" style="width:100%" 
-              ${!isAvailable ? 'disabled' : ''} 
+          <img src="${item.imagenUrl}" class="card-img" alt="${item.nombre}" loading="lazy">
+        </div>
+        <div class="card-body">
+          <h3 class="card-title">${item.nombre}</h3>
+          <div class="card-price">$${item.precioAlquiler.toLocaleString('es-CO')} <small>/ alquiler</small></div>
+          <div class="chip-row">
+            <span class="chip"><i class="fa-solid fa-ruler"></i> Talla ${item.talla}</span>
+            <span class="stock-badge ${stockClass}">${item.stockDisponible} / ${item.stockTotal} disp.</span>
+          </div>
+          <div class="card-footer">
+            <button class="btn ${isAvailable ? 'btn-primary' : ''} btn-block"
+              ${!isAvailable ? 'disabled' : ''}
               onclick="abrirModalAlquilar('${item._id}')">
-              ${isAvailable ? 'Alquilar Disfraz' : 'Agotado'}
+              ${isAvailable ? 'Alquilar <i class="fa-solid fa-arrow-right"></i>' : 'Agotado'}
             </button>
           </div>
         </div>
-      </div>
+      </article>
     `;
-  });
+  }).join('');
 }
 
 function abrirModalAlquilar(disfrazId) {
@@ -185,50 +211,68 @@ async function cargarAlquileres() {
   const alquileres = await res.json();
   const tbody = document.getElementById('alquileres-table-body');
   if (!tbody) return;
-  tbody.innerHTML = '';
+  if (!alquileres.length) {
+    tbody.innerHTML = `
+      <tr class="empty-row"><td colspan="7">
+        <i class="fa-solid fa-receipt"></i>&nbsp; No se encontraron alquileres${cedula ? ` para la cédula ${cedula}` : ''}.
+      </td></tr>`;
+    return;
+  }
 
-  alquileres.forEach(a => {
+  tbody.innerHTML = alquileres.map(a => {
     const fAlquiler = formatearFechaLocal(a.fechaAlquiler || a.createdAt);
     const fDevolucion = formatearFechaLocal(a.fechaDevolucionProgramada);
     const isActivo = a.estado === 'ACTIVO';
 
-    tbody.innerHTML += `
+    return `
       <tr>
         <td><strong>${a.cedulaCliente}</strong></td>
         <td>${a.nombreCliente}</td>
         <td>${a.disfrazId ? a.disfrazId.nombre : 'N/A'}</td>
         <td>${fAlquiler}</td>
         <td>${fDevolucion}</td>
-        <td><span class="stock-badge ${isActivo ? 'empty' : 'available'}">${a.estado}</span></td>
+        <td><span class="stock-badge ${isActivo ? 'warning' : 'available'}">${a.estado}</span></td>
         <td>
           ${isActivo ? `
-            <button class="btn btn-success" style="font-size: 0.8rem; padding: 4px 8px;" onclick="devolverDisfraz('${a._id}')">
-              ↩️ Devolver
+            <button class="btn btn-success btn-sm" onclick="devolverDisfraz('${a._id}')">
+              <i class="fa-solid fa-rotate-left"></i> Devolver
             </button>
-          ` : '—'}
+          ` : '<span style="color: var(--text-dim)">—</span>'}
         </td>
       </tr>
     `;
-  });
+  }).join('');
 }
 
-function switchSection(section) {
-  document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active'));
-  
-  if (section === 'catalogo') {
-    document.getElementById('sec-catalogo').classList.add('active');
-    document.getElementById('section-title').textContent = 'Catálogo de Disfraces';
-    cargarDisfraces();
-  } else {
-    document.getElementById('sec-alquileres').classList.add('active');
-    document.getElementById('section-title').textContent = 'Historial de Alquileres';
-    cargarAlquileres();
-  }
+function openModal(id) {
+  const modal = document.getElementById(id);
+  modal.style.display = 'flex';
+  const firstInput = modal.querySelector('input:not([type="hidden"])');
+  if (firstInput) setTimeout(() => firstInput.focus(), 50);
 }
-
-function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function cerrarSidebarMovil() {
+  document.getElementById('sidebar').classList.remove('active');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (backdrop) backdrop.classList.remove('show');
+}
+
+// Notificaciones tipo toast (reemplaza alert)
+function showToast(mensaje, tipo = 'info', duracion = 3500) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const iconos = { success: 'fa-circle-check', error: 'fa-circle-exclamation', info: 'fa-circle-info' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${tipo}`;
+  toast.innerHTML = `<i class="fa-solid ${iconos[tipo] || iconos.info}"></i><span></span>`;
+  toast.querySelector('span').textContent = mensaje;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('hide');
+    toast.addEventListener('animationend', () => toast.remove(), { once: true });
+  }, duracion);
+}
 
 // Función para eliminar solo la imagen seleccionada
 function quitarImagenCargada() {
@@ -238,7 +282,7 @@ function quitarImagenCargada() {
 
   if (inputImagen) inputImagen.value = '';
   if (previewImg) previewImg.src = '';
-  if (previewContainer) previewContainer.style.display = 'none';
+  if (previewContainer) previewContainer.classList.remove('show');
 }
 
 // Función para resetear todo el formulario y cerrar el modal al cancelar
@@ -259,9 +303,15 @@ function formatearFechaLocal(fechaIso) {
   return fechaAjustada.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
-async function devolverDisfraz(alquilerId) {
-  const pin = prompt('Ingresa el PIN de seguridad para confirmar la devolución:');
-  if (!pin) return;
+function devolverDisfraz(alquilerId) {
+  document.getElementById('devolver-alquiler-id').value = alquilerId;
+  openModal('modal-devolver');
+}
+
+document.getElementById('form-devolver').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const alquilerId = document.getElementById('devolver-alquiler-id').value;
+  const pin = document.getElementById('devolver-pin').value;
 
   const res = await fetch(`${API_URL}/alquileres/${alquilerId}/devolver`, {
     method: 'PUT',
@@ -271,12 +321,14 @@ async function devolverDisfraz(alquilerId) {
 
   const data = await res.json();
   if (res.ok) {
-    alert('Disfraz devuelto con éxito');
+    closeModal('modal-devolver');
+    e.target.reset();
+    showToast('Disfraz devuelto con éxito', 'success');
     cargarAlquileres();
   } else {
-    alert(`Error: ${data.error}`);
+    showToast(`Error: ${data.error}`, 'error');
   }
-}
+});
 
 // 4. Cambiar Precio / Descuento
 function abrirModalPrecio(disfrazId, precioActual) {
@@ -299,10 +351,12 @@ document.getElementById('form-cambiar-precio').addEventListener('submit', async 
 
   if (res.ok) {
     closeModal('modal-cambiar-precio');
+    document.getElementById('precio-pin').value = '';
+    showToast('Precio actualizado', 'success');
     cargarDisfraces();
   } else {
     const data = await res.json();
-    alert(`Error: ${data.error}`);
+    showToast(`Error: ${data.error}`, 'error');
   }
 });
 
@@ -319,27 +373,34 @@ document.getElementById('form-vaciar-todo').addEventListener('submit', async (e)
   });
 
   if (res.ok) {
-    alert('Inventario y alquileres eliminados por completo.');
+    showToast('Inventario y alquileres eliminados por completo', 'success');
     closeModal('modal-vaciar-todo');
+    e.target.reset();
     cargarDisfraces();
   } else {
     const data = await res.json();
-    alert(`Error: ${data.error}`);
+    showToast(`Error: ${data.error}`, 'error');
   }
 });
 
 // 6. Cargar Métricas Diarias
 async function cargarMetricas() {
-  const res = await fetch(`${API_URL}/alquileres`);
-  const alquileres = await res.json();
+  const [resAlq, resDisf] = await Promise.all([
+    fetch(`${API_URL}/alquileres`),
+    fetch(`${API_URL}/disfraces`)
+  ]);
+  const alquileres = await resAlq.json();
+  const disfraces = await resDisf.json();
 
   const hoyStr = new Date().toISOString().split('T')[0];
   let totalHoy = 0;
   let acumuladoTotal = 0;
+  let activos = 0;
 
   alquileres.forEach(a => {
     const precio = a.disfrazId ? a.disfrazId.precioAlquiler : 0;
     acumuladoTotal += precio;
+    if (a.estado === 'ACTIVO') activos++;
 
     const fechaAlqStr = new Date(a.fechaAlquiler || a.createdAt).toISOString().split('T')[0];
     if (fechaAlqStr === hoyStr) {
@@ -347,26 +408,33 @@ async function cargarMetricas() {
     }
   });
 
+  const agotados = disfraces.filter(d => d.stockDisponible === 0).length;
+
   document.getElementById('ingresos-hoy').textContent = `$${totalHoy.toLocaleString('es-CO')}`;
   document.getElementById('ingresos-totales').textContent = `$${acumuladoTotal.toLocaleString('es-CO')}`;
+  document.getElementById('alquileres-activos').textContent = activos;
+  document.getElementById('disfraces-agotados').textContent = agotados;
 }
 
 // 7. Navegación entre Pestañas
-function switchSection(section) {
-  document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-menu a').forEach(a => a.classList.remove('active'));
+const SECCIONES = {
+  catalogo:   { titulo: 'Catálogo de Disfraces',  subtitulo: 'Gestiona tu inventario y registra alquileres', cargar: () => cargarDisfraces() },
+  alquileres: { titulo: 'Historial de Alquileres', subtitulo: 'Consulta y gestiona las devoluciones',        cargar: () => cargarAlquileres() },
+  metricas:   { titulo: 'Métricas y Conteo Diario', subtitulo: 'Resumen de ingresos e inventario',           cargar: () => cargarMetricas() }
+};
 
-  if (section === 'catalogo') {
-    document.getElementById('sec-catalogo').classList.add('active');
-    document.getElementById('section-title').textContent = 'Catálogo de Disfraces';
-    cargarDisfraces();
-  } else if (section === 'alquileres') {
-    document.getElementById('sec-alquileres').classList.add('active');
-    document.getElementById('section-title').textContent = 'Historial de Alquileres';
-    cargarAlquileres();
-  } else if (section === 'metricas') {
-    document.getElementById('sec-metricas').classList.add('active');
-    document.getElementById('section-title').textContent = 'Métricas y Conteo Diario';
-    cargarMetricas();
-  }
+function switchSection(section) {
+  const cfg = SECCIONES[section];
+  if (!cfg) return;
+
+  document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-menu a').forEach(a =>
+    a.classList.toggle('active', a.dataset.section === section)
+  );
+
+  document.getElementById(`sec-${section}`).classList.add('active');
+  document.getElementById('section-title').textContent = cfg.titulo;
+  document.getElementById('section-subtitle').textContent = cfg.subtitulo;
+  cerrarSidebarMovil();
+  cfg.cargar();
 }
